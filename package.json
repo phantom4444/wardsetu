@@ -14,7 +14,8 @@
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.105.4",
-    "@turf/turf": "^7.3.5",
+    "@turf/boolean-point-in-polygon": "^7.3.5",
+    "@turf/helpers": "^7.3.5",
     "maplibre-gl": "^5.24.0",
     "react": "^19.2.6",
     "react-dom": "^19.2.6"

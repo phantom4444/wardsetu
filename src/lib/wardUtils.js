@@ -1,4 +1,5 @@
-import { booleanPointInPolygon, point } from '@turf/turf'
+import booleanPointInPolygon from '@turf/boolean-point-in-polygon'
+import { point } from '@turf/helpers'
 
 export function detectWard(lat, lng, wardGeoJSON) {
   if (!wardGeoJSON || !wardGeoJSON.features) return null
