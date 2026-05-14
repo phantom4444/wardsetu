@@ -102,34 +102,6 @@ export default function ReportForm({
       })
       if (insertErr) throw insertErr
 
-      const { data: wardRow } = await supabase
-        .from('wards')
-        .select('total_reports, open_reports')
-        .eq('ward_number', wardNumber)
-        .maybeSingle()
-
-      if (wardRow) {
-        await supabase
-          .from('wards')
-          .update({
-            total_reports: (wardRow.total_reports ?? 0) + 1,
-            open_reports: (wardRow.open_reports ?? 0) + 1,
-          })
-          .eq('ward_number', wardNumber)
-      } else {
-        await supabase.from('wards').insert({
-          ward_number: wardNumber,
-          vidhansabha: ward.properties.vidhansabha,
-          mla: ward.properties.mla,
-          mla_party: ward.properties.mla_party,
-          lok_sabha: ward.properties.lok_sabha,
-          mp: ward.properties.mp,
-          mp_party: ward.properties.mp_party,
-          total_reports: 1,
-          open_reports: 1,
-        })
-      }
-
       onSuccess()
     } catch (e) {
       console.error(e)

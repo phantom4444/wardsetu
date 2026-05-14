@@ -26,7 +26,6 @@ export default function App() {
   const [userLocation, setUserLocation] = useState(null)
   const [selectedWard, setSelectedWard] = useState(null)
   const [wardGeoJSON, setWardGeoJSON] = useState(null)
-  const [wardCounts, setWardCounts] = useState({})
   const [reports, setReports] = useState([])
   const [selectedReportId, setSelectedReportId] = useState(null)
   const [detectingGPS, setDetectingGPS] = useState(false)
@@ -36,24 +35,6 @@ export default function App() {
       .then((r) => r.json())
       .then(setWardGeoJSON)
       .catch((err) => console.error('Failed to load wards GeoJSON:', err))
-  }, [])
-
-  const refreshCounts = useCallback(async () => {
-    const { data, error } = await supabase
-      .from('wards')
-      .select('ward_number, total_reports, open_reports')
-    if (error) {
-      console.warn('Failed to load ward counts:', error.message)
-      return
-    }
-    const map = {}
-    for (const row of data || []) {
-      map[row.ward_number] = {
-        total_reports: row.total_reports ?? 0,
-        open_reports: row.open_reports ?? 0,
-      }
-    }
-    setWardCounts(map)
   }, [])
 
   const refreshReports = useCallback(async () => {
@@ -73,10 +54,22 @@ export default function App() {
 
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
-    refreshCounts()
-    // eslint-disable-next-line react-hooks/set-state-in-effect
     refreshReports()
-  }, [refreshCounts, refreshReports])
+  }, [refreshReports])
+
+  // Single source of truth: derive ward counts from the reports array.
+  // Anything "open" stays open; anything else is treated as closed.
+  const wardCounts = useMemo(() => {
+    const map = {}
+    for (const r of reports) {
+      const w = r.ward_number
+      if (w == null) continue
+      const slot = map[w] || (map[w] = { total_reports: 0, open_reports: 0 })
+      slot.total_reports += 1
+      if (r.status === 'open') slot.open_reports += 1
+    }
+    return map
+  }, [reports])
 
   const dismissOnboarding = () => {
     localStorage.setItem(ONBOARDING_KEY, '1')
@@ -157,7 +150,6 @@ export default function App() {
   }
 
   const handleSuccess = () => {
-    refreshCounts()
     refreshReports()
     setView('success')
   }
