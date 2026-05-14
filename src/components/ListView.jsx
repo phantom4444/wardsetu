@@ -66,30 +66,36 @@ export default function ListView({ wardCounts, wardGeoJSON, onWardTap }) {
         )}
         {worst.map((w, i) => {
           const pct = Math.round((w.open_reports / maxOpen) * 100)
+          const total = w.total_reports || w.open_reports
+          const resolvedPct = total > 0
+            ? Math.round(((total - w.open_reports) / total) * 100)
+            : 0
+          const topN = i < 3
           return (
             <button
               key={w.ward_number}
-              className="ward-row"
+              className={`ward-row ${topN ? 'ward-row-hot' : ''}`}
               onClick={() => onWardTap(w)}
             >
-              <span className="ward-rank">{i + 1}</span>
+              <span className={`ward-rank ${topN ? 'rank-hot' : ''}`}>{i + 1}</span>
               <span className="ward-row-main">
-                <span className="ward-row-title">Ward {w.ward_number}</span>
-                <span className="ward-row-sub">
-                  {w.vidhansabha} · #{w.ward_number}
+                <span className="ward-row-title-line">
+                  <span className="ward-row-title">Ward {w.ward_number}</span>
+                  <span className="ward-row-zone">{w.vidhansabha} · #{w.ward_number}</span>
                 </span>
                 <span className="ward-progress">
                   <span
-                    className="ward-progress-bar"
+                    className={`ward-progress-bar ${topN ? '' : 'bar-muted'}`}
                     style={{ width: `${pct}%` }}
                   />
                 </span>
-                <span className="ward-row-mla">
-                  MLA: {w.mla || '—'}
-                  {w.mla_party ? ` (${w.mla_party})` : ''}
+                <span className="ward-row-meta">
+                  {w.open_reports} report{w.open_reports === 1 ? '' : 's'} · {resolvedPct}% resolved
                 </span>
               </span>
-              <span className="ward-row-count">{w.open_reports}</span>
+              <span className={`ward-row-count ${topN ? '' : 'count-muted'}`}>
+                {w.open_reports}
+              </span>
             </button>
           )
         })}

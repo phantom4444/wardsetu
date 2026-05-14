@@ -26,6 +26,7 @@ export default function ReportForm({
   const [photoFile, setPhotoFile] = useState(null)
   const [photoPreview, setPhotoPreview] = useState(null)
   const [landmark, setLandmark] = useState('')
+  const [description, setDescription] = useState('')
   const [category, setCategory] = useState(null)
   const [severity, setSeverity] = useState('Moderate')
   const [submitting, setSubmitting] = useState(false)
@@ -92,6 +93,7 @@ export default function ReportForm({
         lng,
         ward_number: wardNumber,
         category,
+        description: description.trim(),
         landmark: landmark.trim() || null,
         severity,
         photo_url: photoUrl,
@@ -227,6 +229,19 @@ export default function ReportForm({
               value={landmark}
               onChange={(e) => setLandmark(e.target.value)}
               maxLength={200}
+            />
+          </div>
+
+          {/* Description */}
+          <div className="form-section">
+            <span className="form-label">Describe the issue</span>
+            <textarea
+              className="form-textarea"
+              placeholder="What's the issue? Add details that help the authorities act faster..."
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              maxLength={600}
+              rows={3}
             />
           </div>
 
