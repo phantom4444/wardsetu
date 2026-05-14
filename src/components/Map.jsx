@@ -6,7 +6,15 @@ const JAIPUR_CENTER = [75.7873, 26.9124]
 const DEFAULT_ZOOM = 11
 
 const Map = forwardRef(function Map(
-  { wardGeoJSON, wardCounts, reports, selectedWard, onWardSelect, userLocation },
+  {
+    wardGeoJSON,
+    wardCounts,
+    reports,
+    selectedWard,
+    onWardSelect,
+    onReportSelect,
+    userLocation,
+  },
   ref
 ) {
   const containerRef = useRef(null)
@@ -293,6 +301,13 @@ const Map = forwardRef(function Map(
           })
       })
 
+      map.on('click', 'report-points', (e) => {
+        const feature = e.features?.[0]
+        if (!feature) return
+        const id = feature.properties.id
+        if (id != null && onReportSelect) onReportSelect(id)
+      })
+
       const setPointer = () => (map.getCanvas().style.cursor = 'pointer')
       const unsetPointer = () => (map.getCanvas().style.cursor = '')
       map.on('mouseenter', 'report-clusters', setPointer)
@@ -302,7 +317,7 @@ const Map = forwardRef(function Map(
     } else {
       map.getSource('reports').setData(fc)
     }
-  }, [mapReady, reports])
+  }, [mapReady, reports, onReportSelect])
 
   // Selected ward outline
   useEffect(() => {

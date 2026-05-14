@@ -6,6 +6,7 @@ import SuccessScreen from './components/SuccessScreen'
 import Splash from './components/Splash'
 import Onboarding from './components/Onboarding'
 import ListView from './components/ListView'
+import ReportDetail from './components/ReportDetail'
 import { supabase } from './lib/supabase'
 import { detectWard } from './lib/wardUtils'
 
@@ -27,6 +28,7 @@ export default function App() {
   const [wardGeoJSON, setWardGeoJSON] = useState(null)
   const [wardCounts, setWardCounts] = useState({})
   const [reports, setReports] = useState([])
+  const [selectedReportId, setSelectedReportId] = useState(null)
   const [detectingGPS, setDetectingGPS] = useState(false)
 
   useEffect(() => {
@@ -57,7 +59,9 @@ export default function App() {
   const refreshReports = useCallback(async () => {
     const { data, error } = await supabase
       .from('reports')
-      .select('id, lat, lng, ward_number, status')
+      .select(
+        'id, created_at, lat, lng, ward_number, category, description, landmark, severity, photo_url, status, upvotes'
+      )
       .order('created_at', { ascending: false })
       .limit(500)
     if (error) {
@@ -86,6 +90,25 @@ export default function App() {
   const handleClosePanel = useCallback(() => {
     setSelectedWard(null)
   }, [])
+
+  const handleReportSelect = useCallback((reportId) => {
+    setSelectedReportId(reportId)
+  }, [])
+
+  const handleCloseReportDetail = useCallback(() => {
+    setSelectedReportId(null)
+  }, [])
+
+  const selectedReport = useMemo(
+    () => reports.find((r) => r.id === selectedReportId) || null,
+    [reports, selectedReportId]
+  )
+  const selectedReportWard = useMemo(() => {
+    if (!selectedReport || !wardGeoJSON) return null
+    return wardGeoJSON.features.find(
+      (f) => f.properties.ward_number === selectedReport.ward_number
+    )
+  }, [selectedReport, wardGeoJSON])
 
   const handlePrimaryReport = () => {
     // If user already picked a ward by tapping, go straight to the form.
@@ -234,6 +257,7 @@ export default function App() {
             reports={reports}
             selectedWard={view === 'main' ? selectedWard : null}
             onWardSelect={handleWardSelect}
+            onReportSelect={handleReportSelect}
             userLocation={userLocation}
           />
 
@@ -270,6 +294,14 @@ export default function App() {
             ward={selectedWard}
             onReportAnother={handleReportAnother}
             onBackToMap={handleBackToMap}
+          />
+        )}
+
+        {selectedReport && selectedReportWard && (
+          <ReportDetail
+            report={selectedReport}
+            ward={selectedReportWard}
+            onClose={handleCloseReportDetail}
           />
         )}
 

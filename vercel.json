@@ -2,6 +2,6 @@
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "framework": "vite",
   "buildCommand": "npm run build",
-  "installCommand": "bun install --no-save",
+  "installCommand": "npm ci --no-audit --no-fund",
   "outputDirectory": "dist"
 }

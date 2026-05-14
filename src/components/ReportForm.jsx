@@ -95,7 +95,7 @@ export default function ReportForm({
         category,
         description: description.trim(),
         landmark: landmark.trim() || null,
-        severity,
+        severity: severity.toLowerCase(),
         photo_url: photoUrl,
         status: 'open',
         upvotes: 0,
