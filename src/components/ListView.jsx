@@ -1,3 +1,37 @@
+import { useMemo, useState } from 'react'
+
+const CATEGORY_LABELS = {
+  garbage: 'Garbage',
+  pothole: 'Pothole',
+  street_light: 'Street Light',
+  waterlogging: 'Waterlogging',
+  stray_animals: 'Stray Animals',
+  encroachment: 'Encroachment',
+  other: 'Other',
+}
+
+function timeAgo(iso) {
+  if (!iso) return 'recently'
+  const ms = Date.now() - new Date(iso).getTime()
+  const mins = Math.floor(ms / 60000)
+  if (mins < 1) return 'Just now'
+  if (mins < 60) return `${mins}m ago`
+  const hours = Math.floor(mins / 60)
+  if (hours < 24) return `${hours}h ago`
+  const days = Math.floor(hours / 24)
+  if (days === 1) return 'Yesterday'
+  if (days < 7) return `${days}d ago`
+  return new Date(iso).toLocaleDateString('en-IN', {
+    day: 'numeric',
+    month: 'short',
+  })
+}
+
+function capitalize(s) {
+  if (!s) return ''
+  return s.charAt(0).toUpperCase() + s.slice(1).toLowerCase()
+}
+
 function buildWorstWards(wardCounts, wardGeoJSON) {
   if (!wardGeoJSON) return []
   const propsByWard = {}
@@ -25,7 +59,24 @@ function buildWorstWards(wardCounts, wardGeoJSON) {
   return rows
 }
 
-export default function ListView({ wardCounts, wardGeoJSON, onWardTap }) {
+export default function ListView({ wardCounts, wardGeoJSON, reports, onReportSelect }) {
+  const [expandedWard, setExpandedWard] = useState(null)
+
+  const reportsByWard = useMemo(() => {
+    const m = {}
+    for (const r of reports || []) {
+      if (r.ward_number == null) continue
+      if (!m[r.ward_number]) m[r.ward_number] = []
+      m[r.ward_number].push(r)
+    }
+    for (const w in m) {
+      m[w].sort(
+        (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+      )
+    }
+    return m
+  }, [reports])
+
   const totals = Object.values(wardCounts || {}).reduce(
     (acc, c) => {
       acc.open += c.open_reports ?? 0
@@ -71,32 +122,75 @@ export default function ListView({ wardCounts, wardGeoJSON, onWardTap }) {
             ? Math.round(((total - w.open_reports) / total) * 100)
             : 0
           const topN = i < 3
+          const isOpen = expandedWard === w.ward_number
+          const wardReports = reportsByWard[w.ward_number] || []
           return (
-            <button
-              key={w.ward_number}
-              className={`ward-row ${topN ? 'ward-row-hot' : ''}`}
-              onClick={() => onWardTap(w)}
-            >
-              <span className={`ward-rank ${topN ? 'rank-hot' : ''}`}>{i + 1}</span>
-              <span className="ward-row-main">
-                <span className="ward-row-title-line">
-                  <span className="ward-row-title">Ward {w.ward_number}</span>
-                  <span className="ward-row-zone">{w.vidhansabha} · #{w.ward_number}</span>
+            <div key={w.ward_number} className="ward-group">
+              <button
+                className={`ward-row ${topN ? 'ward-row-hot' : ''} ${isOpen ? 'is-open' : ''}`}
+                onClick={() => setExpandedWard(isOpen ? null : w.ward_number)}
+                aria-expanded={isOpen}
+              >
+                <span className={`ward-rank ${topN ? 'rank-hot' : ''}`}>{i + 1}</span>
+                <span className="ward-row-main">
+                  <span className="ward-row-title-line">
+                    <span className="ward-row-title">Ward {w.ward_number}</span>
+                    <span className="ward-row-zone">{w.vidhansabha} · #{w.ward_number}</span>
+                  </span>
+                  <span className="ward-progress">
+                    <span
+                      className={`ward-progress-bar ${topN ? '' : 'bar-muted'}`}
+                      style={{ width: `${pct}%` }}
+                    />
+                  </span>
+                  <span className="ward-row-meta">
+                    {w.open_reports} report{w.open_reports === 1 ? '' : 's'} · {resolvedPct}% resolved
+                  </span>
                 </span>
-                <span className="ward-progress">
-                  <span
-                    className={`ward-progress-bar ${topN ? '' : 'bar-muted'}`}
-                    style={{ width: `${pct}%` }}
-                  />
+                <span className={`ward-row-count ${topN ? '' : 'count-muted'}`}>
+                  {w.open_reports}
                 </span>
-                <span className="ward-row-meta">
-                  {w.open_reports} report{w.open_reports === 1 ? '' : 's'} · {resolvedPct}% resolved
+                <span className={`ward-row-chevron ${isOpen ? 'is-open' : ''}`} aria-hidden>
+                  <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
+                    <polyline points="6 9 12 15 18 9" />
+                  </svg>
                 </span>
-              </span>
-              <span className={`ward-row-count ${topN ? '' : 'count-muted'}`}>
-                {w.open_reports}
-              </span>
-            </button>
+              </button>
+
+              {isOpen && (
+                <div className="ward-reports">
+                  {wardReports.length === 0 ? (
+                    <div className="ward-reports-empty">No reports to show.</div>
+                  ) : (
+                    wardReports.map((r) => {
+                      const sev = (r.severity || 'moderate').toLowerCase()
+                      const title =
+                        r.landmark?.trim() ||
+                        CATEGORY_LABELS[r.category] ||
+                        'Issue'
+                      return (
+                        <button
+                          key={r.id}
+                          className="ward-report-row"
+                          onClick={() => onReportSelect?.(r.id)}
+                        >
+                          <span className="ward-report-badge">1</span>
+                          <span className="ward-report-main">
+                            <span className="ward-report-title">{title}</span>
+                            <span className="ward-report-time">
+                              {timeAgo(r.created_at)}
+                            </span>
+                          </span>
+                          <span className={`ward-report-sev sev-${sev}`}>
+                            {capitalize(sev)}
+                          </span>
+                        </button>
+                      )
+                    })
+                  )}
+                </div>
+              )}
+            </div>
           )
         })}
       </div>

@@ -171,23 +171,6 @@ export default function App() {
     setView('main')
   }
 
-  const handleListWardTap = (wardRow) => {
-    setTab('map')
-    const feature = wardGeoJSON?.features.find(
-      (f) => f.properties.ward_number === wardRow.ward_number
-    )
-    if (feature) setSelectedWard(feature)
-    if (wardRow.centroid_lng && wardRow.centroid_lat) {
-      requestAnimationFrame(() => {
-        mapRef.current?.flyTo(
-          parseFloat(wardRow.centroid_lng),
-          parseFloat(wardRow.centroid_lat),
-          14
-        )
-      })
-    }
-  }
-
   const stats = useMemo(() => {
     let open = 0
     let total = 0
@@ -266,7 +249,8 @@ export default function App() {
           <ListView
             wardCounts={wardCounts}
             wardGeoJSON={wardGeoJSON}
-            onWardTap={handleListWardTap}
+            reports={reports}
+            onReportSelect={handleReportSelect}
           />
         )}
 
